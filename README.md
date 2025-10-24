@@ -108,7 +108,8 @@ figma-hmw-extension/
 
 ### Backend Architecture
 - **Express Server**: REST API for AI processing
-- **LangChain**: Agent orchestration and LLM integration
+- **LangGraph**: Stateful agent orchestration with workflow control
+- **LangChain Core**: Base primitives for LLM interactions
 - **Anthropic Claude**: AI model for HMW question generation
 
 ## License

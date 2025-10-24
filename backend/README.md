@@ -69,7 +69,15 @@ The server uses `tsx` for hot-reload during development. Any changes to TypeScri
 ## Dependencies
 
 - **express** - Web server framework
-- **langchain** - LLM orchestration framework
+- **@langchain/core** - Core LangChain primitives and interfaces
 - **@langchain/anthropic** - Anthropic Claude integration
+- **@langchain/langgraph** - LangGraph for agent orchestration (state machines, workflows)
 - **dotenv** - Environment variable management
 - **cors** - Cross-origin request handling
+
+## LangChain Architecture
+
+This project uses the modern LangChain TypeScript stack:
+- **LangChain Core** - Base abstractions for working with LLMs
+- **LangGraph** - For building stateful, multi-step agent workflows
+- **Anthropic Integration** - Claude AI model access
