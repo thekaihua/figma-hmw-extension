@@ -5,7 +5,10 @@
   "main": "dist/code.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": ["none"],
+    "devAllowedDomains": ["http://localhost:3000"],
+    "reasoning": "Plugin connects to local backend API (localhost) for AI-powered idea generation during development"
   }
 }
