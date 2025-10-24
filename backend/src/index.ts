@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import hmwRouter from './routes/hmw';
 
 // Load environment variables
 dotenv.config();
@@ -29,6 +30,9 @@ app.get('/api/test', (req: Request, res: Response) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// HMW generation routes
+app.use('/api/hmw', hmwRouter);
 
 // Start server
 app.listen(PORT, () => {
