@@ -1,22 +1,21 @@
 # HMW Figma Extension
 
-A Figma plugin extension that demonstrates basic plugin functionality with UI interaction.
+A Figma plugin extension with an AI-powered backend for "How Might We" question generation and design ideation.
 
-## Features
+## Project Structure
 
-- Create multiple rectangles with customizable count
-- Simple and clean UI interface
-- TypeScript-based development
+This is a monorepo containing:
+- **`/plugin`** - Figma plugin (frontend)
+- **`/backend`** - Express + LangChain API server
 
-## Development Setup
+## Prerequisites
 
-### Prerequisites
-
-- Node.js (v16 or higher)
+- Node.js (v18 or higher)
 - npm or yarn
 - Figma desktop app
+- Anthropic API key
 
-### Installation
+## Installation
 
 1. Clone this repository:
    ```bash
@@ -24,78 +23,93 @@ A Figma plugin extension that demonstrates basic plugin functionality with UI in
    cd figma-hmw-extension
    ```
 
-2. Install dependencies:
+2. Install plugin dependencies:
    ```bash
+   cd plugin
    npm install
    ```
 
-3. Build the plugin:
+3. Install backend dependencies:
    ```bash
+   cd ../backend
+   npm install
+   ```
+
+4. Configure backend environment:
+   ```bash
+   cp .env.example .env
+   # Add your Anthropic API key to .env
+   ```
+
+## Development Workflow
+
+### Plugin Development
+
+1. Build the plugin:
+   ```bash
+   cd plugin
    npm run build
    ```
 
-### Development Workflow
-
-1. **Build the plugin:**
-   ```bash
-   npm run build
-   ```
-
-2. **Watch mode for development:**
+2. Watch mode for development:
    ```bash
    npm run watch
    ```
-   This will automatically recompile TypeScript files when changes are detected.
 
-3. **Load the plugin in Figma:**
+3. Load the plugin in Figma:
    - Open Figma desktop app
    - Go to `Plugins` → `Development` → `Import plugin from manifest...`
-   - Select the `manifest.json` file from this project
-   - The plugin will now appear in your development plugins list
+   - Select `plugin/manifest.json`
 
-4. **Run the plugin:**
-   - In Figma, go to `Plugins` → `Development` → `HMW Extension`
-   - The plugin UI will appear
+### Backend Development
 
-## Project Structure
+1. Start the backend server:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+2. Server will run on `http://localhost:3000`
+
+## Detailed Project Structure
 
 ```
 figma-hmw-extension/
-├── manifest.json          # Plugin configuration
-├── package.json          # Node.js dependencies
-├── tsconfig.json         # TypeScript configuration
-├── build.js              # Build script to bundle HTML
-├── src/
-│   ├── code.ts          # Main plugin code (runs in Figma sandbox)
-│   └── ui.html          # Plugin UI interface
-└── dist/                # Compiled output (generated)
-    ├── code.js
-    └── ui.html
+├── plugin/
+│   ├── manifest.json      # Figma plugin configuration
+│   ├── package.json       # Plugin dependencies
+│   ├── tsconfig.json      # Plugin TypeScript config
+│   ├── build.js           # Build script
+│   ├── src/
+│   │   ├── code.ts        # Plugin main code
+│   │   └── ui.html        # Plugin UI
+│   └── dist/              # Compiled plugin output
+│
+├── backend/
+│   ├── package.json       # Backend dependencies
+│   ├── tsconfig.json      # Backend TypeScript config
+│   ├── .env.example       # Environment template
+│   ├── src/
+│   │   ├── index.ts       # Express server entry
+│   │   ├── routes/        # API routes
+│   │   ├── agents/        # LangChain agents
+│   │   └── config/        # Configuration
+│   └── dist/              # Compiled backend output
+│
+└── README.md              # This file
 ```
 
 ## How It Works
 
-- **Main Thread (`src/code.ts`)**: Runs in Figma's sandbox with access to the document API
-- **UI Thread (`src/ui.html`)**: Runs in an iframe and handles user interaction
+### Plugin Architecture
+- **Main Thread (`plugin/src/code.ts`)**: Runs in Figma's sandbox with access to the document API
+- **UI Thread (`plugin/src/ui.html`)**: Runs in an iframe and handles user interaction
 - Communication between threads happens via `postMessage` API
 
-## Usage
-
-1. Open the plugin in Figma
-2. Enter the number of rectangles you want to create (1-100)
-3. Click "Create" to generate rectangles
-4. Click "Cancel" to close the plugin
-
-## Building for Production
-
-```bash
-npm run build
-```
-
-This will:
-1. Compile TypeScript to JavaScript
-2. Bundle the HTML into the code
-3. Output everything to the `dist/` folder
+### Backend Architecture
+- **Express Server**: REST API for AI processing
+- **LangChain**: Agent orchestration and LLM integration
+- **Anthropic Claude**: AI model for HMW question generation
 
 ## License
 

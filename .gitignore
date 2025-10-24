@@ -1,8 +1,21 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 build/
-*.log
-.DS_Store
+
+# Environment variables
 .env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+
+# IDE
 .vscode/
 .idea/
