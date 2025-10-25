@@ -132,6 +132,35 @@
       color: #999;
       font-style: italic;
     }
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e0e0e0;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0066FF;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0066FF;
+      cursor: pointer;
+      border: none;
+    }
+    #count-value {
+      font-weight: 600;
+      color: #0066FF;
+    }
   </style>
 </head>
 <body>
@@ -144,6 +173,18 @@
       placeholder="Enter your HMW statement here"
       rows="3"
     ></textarea>
+  </div>
+
+  <div class="input-group">
+    <label for="idea-count">Number of ideas: <span id="count-value">3</span></label>
+    <input 
+      type="range" 
+      id="idea-count" 
+      min="3" 
+      max="15" 
+      value="3"
+      step="1"
+    />
   </div>
 
   <button id="generate">
@@ -166,10 +207,16 @@
     const closeBtn = document.getElementById('close');
     const resultsContainer = document.getElementById('results');
     const resultsContent = document.getElementById('results-content');
+    const ideaCountSlider = document.getElementById('idea-count');
+    const countValueDisplay = document.getElementById('count-value');
 
     // API Configuration
     const API_BASE_URL = 'http://localhost:3000';
-    const API_TIMEOUT = 30000; // 30 seconds (AI generation can take time)
+    
+    // Dynamic timeout based on idea count: 20 base + 5 seconds per idea
+    function getTimeoutForCount(count) {
+      return (20 + count * 5) * 1000; // Convert to milliseconds
+    }
 
     // State management
     let isLoading = false;
@@ -228,11 +275,17 @@
       }
     }
 
+    // Update count display when slider changes
+    ideaCountSlider.addEventListener('input', (e) => {
+      countValueDisplay.textContent = e.target.value;
+    });
+
     /**
      * Call backend API to generate ideas
      */
-    async function generateIdeas(hmw) {
+    async function generateIdeas(hmw, count) {
       try {
+        const timeout = getTimeoutForCount(count);
         const response = await fetchWithTimeout(
           `${API_BASE_URL}/api/hmw/generate`,
           {
@@ -240,9 +293,9 @@
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ hmw })
+            body: JSON.stringify({ hmw, count })
           },
-          API_TIMEOUT
+          timeout
         );
 
         if (!response.ok) {
@@ -285,6 +338,7 @@
     // Handle generate button click
     generateBtn.onclick = async () => {
       const hmwText = input.value.trim();
+      const ideaCount = parseInt(ideaCountSlider.value);
       
       if (!hmwText) {
         showResults('Please enter a HMW statement', true);
@@ -297,11 +351,14 @@
       
       try {
         // Call backend API directly from UI thread
-        const result = await generateIdeas(hmwText);
+        const result = await generateIdeas(hmwText, ideaCount);
         
         // Format and display results
         const formattedIdeas = formatIdeas(result.ideas);
         showResults(formattedIdeas);
+        
+        // Send ideas to main thread to create Figma frames
+        parent.postMessage({ pluginMessage: { type: 'create-ideas', ideas: result.ideas } }, '*');
       } catch (error) {
         // Show error message
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';

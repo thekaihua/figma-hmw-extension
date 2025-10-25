@@ -5,11 +5,12 @@ const router = Router();
 
 /**
  * POST /api/hmw/generate
- * Generate 3 diverse solution ideas for an HMW statement
+ * Generate N diverse solution ideas for an HMW statement
  * 
  * Request body:
  * {
- *   "hmw": "How might we help users save time during onboarding?"
+ *   "hmw": "How might we help users save time during onboarding?",
+ *   "count": 3  // Optional, defaults to 3, range: 3-15
  * }
  * 
  * Response:
@@ -27,7 +28,7 @@ const router = Router();
 router.post('/generate', async (req: Request, res: Response) => {
   try {
     // Validate request body
-    const { hmw } = req.body;
+    const { hmw, count } = req.body;
     
     if (!hmw) {
       return res.status(400).json({
@@ -50,8 +51,18 @@ router.post('/generate', async (req: Request, res: Response) => {
       });
     }
 
+    // Validate count parameter (optional, defaults to 3)
+    const ideaCount = count !== undefined ? parseInt(count) : 3;
+    
+    if (isNaN(ideaCount) || ideaCount < 3 || ideaCount > 15) {
+      return res.status(400).json({
+        error: 'Invalid field value: count must be between 3 and 15',
+        message: 'The "count" field must be a number between 3 and 15'
+      });
+    }
+
     // Call the LangChain agent
-    const result = await generateHMWIdeas(hmw);
+    const result = await generateHMWIdeas(hmw, ideaCount);
 
     if (!result.success) {
       return res.status(500).json({
