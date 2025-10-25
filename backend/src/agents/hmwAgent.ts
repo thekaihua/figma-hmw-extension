@@ -1,7 +1,7 @@
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { PromptTemplate } from '@langchain/core/prompts';
-import { StructuredOutputParser } from '@langchain/core/output_parsers';
+import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
@@ -17,27 +17,50 @@ const ideaSchema = z.object({
 
 // Define the schema for the complete output (array of 3 ideas)
 const outputSchema = z.object({
-  ideas: z.array(ideaSchema).length(3).describe('Array of exactly 3 diverse solution ideas'),
+  ideas: z.array(ideaSchema),
 });
 
-// Create the output parser
-const outputParser = StructuredOutputParser.fromZodSchema(outputSchema);
+// Use JsonOutputParser for simpler, more reliable parsing
+const outputParser = new JsonOutputParser();
 
-// Create the prompt template with divergent thinking instructions
-const promptTemplate = PromptTemplate.fromTemplate(`You are a UX design ideation assistant. Given an HMW statement, generate 3 diverse solution ideas.
+// Create the prompt template with explicit JSON format
+const promptTemplate = PromptTemplate.fromTemplate(`You are a UX design ideation assistant. Generate 3 diverse solution ideas for the given HMW statement.
 
 HMW: {hmw}
 
 For each idea, provide:
-- Title: Short, catchy name
-- Description: 2-3 sentences explaining the concept
-- Approach: (technical/service/behavioral)
+- title: Short, catchy name (string)
+- description: 2-3 sentences explaining the concept (string)
+- approach: MUST be exactly one of: "technical", "service", "behavioral" (string)
 
 Think divergently - make each idea distinctly different. One should focus on technical innovation, one on service/process design, and one on behavioral or human-centered approaches.
 
-{format_instructions}
+Return your response as a JSON object with this EXACT structure:
+{{
+  "ideas": [
+    {{
+      "title": "Idea Title",
+      "description": "Detailed description of the idea.",
+      "approach": "technical"
+    }},
+    {{
+      "title": "Another Idea",
+      "description": "Description of another idea.",
+      "approach": "service"
+    }},
+    {{
+      "title": "Third Idea",
+      "description": "Description of third idea.",
+      "approach": "behavioral"
+    }}
+  ]
+}}
 
-Generate creative and varied ideas that explore different dimensions of the problem space.`);
+IMPORTANT: 
+- Output ONLY the JSON object
+- Do NOT include markdown code fences like \`\`\`json
+- Do NOT include any explanatory text before or after the JSON
+- Ensure the JSON is valid and parseable`);
 
 // Initialize the LLM model (configurable: Anthropic or Gemini)
 // Set LLM_PROVIDER in .env to 'anthropic' or 'gemini' (default: gemini)
@@ -46,12 +69,12 @@ const LLM_PROVIDER = process.env.LLM_PROVIDER || 'gemini';
 const model = LLM_PROVIDER === 'anthropic'
   ? new ChatAnthropic({
       modelName: 'claude-3-5-sonnet-20250110',
-      temperature: 0.8,
+      temperature: 0.7, // Slightly lower for better instruction following
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     })
   : new ChatGoogleGenerativeAI({
       modelName: 'gemini-2.5-flash', // Latest model with free tier!
-      temperature: 0.8,
+      temperature: 0.7, // Slightly lower for better instruction following
       apiKey: process.env.GOOGLE_API_KEY,
     });
 
@@ -65,16 +88,14 @@ const chain = promptTemplate.pipe(model).pipe(outputParser);
  */
 export async function generateHMWIdeas(hmw: string) {
   try {
-    const formatInstructions = outputParser.getFormatInstructions();
+    const result = await chain.invoke({ hmw });
     
-    const result = await chain.invoke({
-      hmw,
-      format_instructions: formatInstructions,
-    });
+    // Validate with Zod schema
+    const validated = outputSchema.parse(result);
 
     return {
       success: true,
-      data: result,
+      data: validated,
     };
   } catch (error) {
     console.error('Error generating HMW ideas:', error);

@@ -302,6 +302,9 @@
         // Format and display results
         const formattedIdeas = formatIdeas(result.ideas);
         showResults(formattedIdeas);
+        
+        // Send ideas to main thread to create Figma frames
+        parent.postMessage({ pluginMessage: { type: 'create-ideas', ideas: result.ideas } }, '*');
       } catch (error) {
         // Show error message
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
