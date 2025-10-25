@@ -28,11 +28,13 @@ figma.ui.onmessage = async (msg) => {
       const padding = 20;
       let xPosition = 0;
       
-      // Define colors for different approaches
+      // Define colors for different prototype types
       const approachColors: Record<string, { r: number; g: number; b: number }> = {
-        technical: { r: 0.4, g: 0.6, b: 1 },    // Blue
-        service: { r: 0.5, g: 0.8, b: 0.5 },    // Green
-        behavioral: { r: 1, g: 0.6, b: 0.4 }    // Orange
+        mobile: { r: 0.4, g: 0.6, b: 1 },       // Blue
+        web: { r: 0.5, g: 0.8, b: 0.5 },        // Green
+        dashboard: { r: 0.6, g: 0.4, b: 0.8 },  // Purple
+        onboarding: { r: 1, g: 0.6, b: 0.4 },   // Orange
+        feature: { r: 1, g: 0.8, b: 0.3 }       // Yellow
       };
       
       for (const idea of ideas) {
