@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HMW Diverger</title>
+  <style>
+    :root { color-scheme: light dark; font: 12px/1.5 Inter, -apple-system, BlinkMacSystemFont, sans-serif; color: var(--figma-color-text, #242424); background: var(--figma-color-bg, #fff); }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .eyebrow { font-size: 10px; letter-spacing: .12em; font-weight: 600; color: var(--figma-color-text-secondary, #777); text-transform: uppercase; }
+    h1 { font-size: 23px; letter-spacing: -.7px; line-height: 1.2; margin: 5px 0 0; white-space: nowrap; }
+    h2 { font-size: 12px; margin: 0 0 8px; font-weight: 600; }
+    p { margin: 0 0 14px; color: var(--figma-color-text-secondary, #777); }
+    #connection-status { flex-shrink: 0; font-size: 10px; border: 1px solid var(--figma-color-border, #ddd); border-radius: 20px; padding: 5px 8px; }
+    #connection-status::before { content: ''; display: inline-block; height: 5px; width: 5px; border-radius: 50%; background: #999; margin-right: 5px; }
+    #connection-status[data-state=connected]::before { background: #37a568; }
+    .intro { font-size: 13px; max-width: 350px; margin-bottom: 22px; }
+    .step { margin-top: 20px; }
+    .step-number { color: var(--figma-color-text-tertiary, #999); display: inline-block; width: 20px; font-size: 11px; }
+    .command { border: 1px solid var(--figma-color-border, #e4e4e4); background: var(--figma-color-bg-secondary, #f8f8f8); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+    .command-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px; font-weight: 600; }
+    code { font: 10px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; user-select: all; }
+    button { font: inherit; cursor: pointer; border: 1px solid var(--figma-color-border, #ddd); background: var(--figma-color-bg, #fff); color: inherit; border-radius: 4px; padding: 5px 10px; }
+    button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid #6475ea; outline-offset: 2px; }
+    button[data-copy] { font-size: 10px; padding: 2px 7px; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .prompt { font-size: 12px; line-height: 1.6; user-select: text; }
+    details { border-top: 1px solid var(--figma-color-border, #e4e4e4); margin-top: 22px; padding-top: 14px; }
+    summary { cursor: pointer; font-weight: 600; }
+    label { display: block; margin: 12px 0 6px; color: var(--figma-color-text-secondary, #777); font-size: 11px; }
+    textarea { display: block; width: 100%; min-height: 130px; resize: vertical; border: 1px solid var(--figma-color-border, #ddd); border-radius: 5px; padding: 10px; font: 11px/1.5 ui-monospace, monospace; color: inherit; background: var(--figma-color-bg-secondary, #f8f8f8); margin-bottom: 8px; }
+    #pairing-token { width: 100%; border: 1px solid var(--figma-color-border, #ddd); border-radius: 5px; padding: 10px; font: 11px/1.5 ui-monospace, monospace; color: inherit; background: var(--figma-color-bg-secondary, #f8f8f8); margin-bottom: 8px; }
+    #render-json { color: var(--figma-color-text-onbrand, #fff); background: var(--figma-color-bg-brand, #252525); border-color: transparent; }
+    #paste-error { color: var(--figma-color-text-danger, #b33); white-space: pre-wrap; font-size: 11px; overflow-wrap: anywhere; margin: 8px 0 0; }
+    .recent { margin-top: 24px; }
+    #run-log { padding: 0; margin: 8px 0 0; list-style: none; font-size: 11px; color: var(--figma-color-text-secondary, #777); }
+    #run-log li { padding: 7px 0; border-bottom: 1px solid var(--figma-color-border, #eee); overflow-wrap: anywhere; }
+    #run-log .run-error { color: var(--figma-color-text-danger, #b33); }
+    footer { margin-top: 20px; color: var(--figma-color-text-tertiary, #888); font-size: 10px; }
+  </style>
+</head>
+<body>
+  <header><div><div class="eyebrow">Explore before you decide</div><h1>HMW Diverger</h1></div><span id="connection-status" data-state="pairing_required" role="status">Pair bridge</span></header>
+  <button id="reconnect" hidden>Connect this window</button>
+  <p class="intro">One question. Different directions.<br>Turn a How Might We into rough, editable wireframes with your own AI agent.</p>
+  <section class="step" aria-labelledby="setup-title">
+    <h2 id="setup-title"><span class="step-number">01</span>Connect your agent</h2>
+    <p>Run the command for your agent in a terminal, then restart its session. Requires Node.js 22.12+ and the local bridge package.</p>
+    <div class="command"><div class="command-head">Claude Code<button data-copy="claude-command" aria-label="Copy Claude Code setup command">Copy</button></div><code id="claude-command">claude mcp add hmw-diverger -- npx -y hmw-diverger-mcp</code></div>
+    <div class="command"><div class="command-head">Codex<button data-copy="codex-command" aria-label="Copy Codex setup command">Copy</button></div><code id="codex-command">codex mcp add hmw-diverger -- npx -y hmw-diverger-mcp</code></div>
+    <p>Source checkout: build the repository, then replace <code>npx -y hmw-diverger-mcp</code> with <code>node /absolute/path/bridge/dist/index.js</code>. The npm commands require a published release.</p>
+  </section>
+  <section id="pairing-panel" class="step" aria-labelledby="pairing-title">
+    <h2 id="pairing-title"><span class="step-number">02</span>Pair this bridge</h2>
+    <p>Ask your agent for the HMW Diverger pairing token from <code>figma_status({includePairingToken:true})</code>, then paste it here. Pair again after restarting the bridge.</p>
+    <form id="pairing-form" autocomplete="off">
+      <label for="pairing-token">Private pairing token</label>
+      <input id="pairing-token" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="pairing-note">
+      <button type="submit">Pair bridge</button>
+      <p id="pairing-note">Kept only while this plugin window is open. Paste JSON also works without pairing.</p>
+    </form>
+  </section>
+  <section class="step" aria-labelledby="ask-title">
+    <h2 id="ask-title"><span class="step-number">03</span>Ask for different directions</h2>
+    <div class="command"><div class="command-head">Try this prompt<button data-copy="example-prompt" aria-label="Copy example prompt">Copy</button></div><div id="example-prompt" class="prompt">Diverge on “HMW help first-time users set up a budget” with 6 distinctly different ideas in Figma. Use HMW Diverger.</div></div>
+    <p>Keep this window open. Each batch creates a Section beside your existing work, with an idea card and 1–3 wireframes per direction.</p>
+  </section>
+  <details><summary>Paste JSON instead</summary>
+    <label for="paste-json">Paste a full spec with hmw and ideas. The same validation and renderer apply.</label>
+    <textarea id="paste-json" spellcheck="false" placeholder='{"hmw":"How might we…?","ideas":[…]}'></textarea>
+    <button id="render-json">Render JSON</button><p id="paste-error" role="alert"></p>
+  </details>
+  <section class="recent" aria-labelledby="recent-title"><h2 id="recent-title">Recent runs</h2><ol id="run-log" aria-live="polite"><li id="empty-runs">Your next batch will appear here.</li></ol></section>
+  <footer>Local bridge · No API key in the plugin · Uses your agent’s account</footer>
+  <script>__UI_SCRIPT__</script>
+</body>
+</html>

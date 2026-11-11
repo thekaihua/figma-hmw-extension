@@ -1,0 +1,16 @@
+# Figma acceptance checks
+
+These checks require Figma Desktop. A fake API and VM cannot establish the host's layout, fonts, clipboard, or network policy. Do not mark this list complete from unit tests.
+
+1. From the repository root, run `npm install`, `npm test`, and `npm run build`.
+2. Import `plugin/manifest.json` into Figma Desktop and open **HMW Diverger** in a Design file. Confirm the initial pill reads **Pair bridge**. Check light/dark themes, setup copy buttons, the pairing form, and scrolling in the 440×680 window.
+3. Register a source bridge: `claude mcp add hmw-diverger-dev -- node /absolute/path/bridge/dist/index.js` (or the same `codex mcp add` form). Restart the agent. Ask it for `figma_status({includePairingToken:true})` and enter the private token in the plugin. Confirm the input clears, the pill changes to **Bridge connected** only after successful pairing, and a normal `figma_status` returns the intended file and page without the token. Wrong tokens should never activate a connection or show up in recent runs.
+4. Ask: “Diverge on ‘HMW help first-time users set up a budget’ with 6 distinctly different ideas in Figma. Use HMW Diverger.” Confirm one Section, six idea columns in two rows (at most four per row), each with a card and 1–3 editable screens. Check all five approach colors, mobile/tablet/desktop widths and text wrapping. The viewport should show the new Section.
+5. Put mixed-size, rotated or negative-position content on the page and render another batch. Confirm it sits to the right of the existing bounds. Check long Make prompts and three-screen ideas do not cause row overlap.
+6. Paste `docs/example-ideas.json` into **Paste JSON instead**, including with the bridge stopped. Confirm equivalent output. Try invalid JSON and a missing button label; confirm a readable error, its path, and no extra nodes.
+7. Include an unknown node type such as `map`; confirm a labeled grey placeholder. Confirm Zod validates inside the real Figma sandbox. The build smoke test already disables dynamic code generation, but the host remains the final check. If host compatibility requires moving validation to the iframe, retain the injectable router validator and the same error contract.
+8. Temporarily interrupt an established connection without restarting the bridge and confirm automatic reconnect using the in-memory token. Restart the bridge: the old token should fail, and the UI should ask for pairing again. Retrieve the new token, pair, and confirm recovery. Closing/reopening the plugin should also require token entry. Open another plugin window: it must not replace the current one until paired, then it should become the active target. Existing in-flight work should fail clearly only when its connection is replaced by a paired window.
+9. Start a second agent session with this bridge enabled. Confirm a readable **port in use** diagnostic. Close the previous owner, restart, and verify recovery.
+10. Check a failure notification and retry. Partial batches should be removed while existing content stays intact. For a timeout, inspect the canvas before retrying to avoid duplicate Sections.
+
+Automated checks: `npm test` (both packages), `npm run typecheck`, `npm run build`, `npm audit`, and `npm pack --workspace bridge --dry-run`.
