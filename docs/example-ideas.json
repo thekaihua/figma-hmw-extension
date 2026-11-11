@@ -1,0 +1,29 @@
+{
+  "hmw": "How might we help first-time users set up a budget?",
+  "ideas": [
+    {
+      "title": "One small start",
+      "approach": "onboarding",
+      "rationale": "Start with a single comfortable weekly limit before asking someone to categorize every expense.",
+      "makePrompt": "Create a mobile budget onboarding flow that asks users for a comfortable weekly spending limit. Show a single amount input, three suggested amounts, and a Continue button. On the next screen, preview the remaining weekly balance and let the user adjust the amount. Keep the interface calm, with clear text and one primary action per screen.",
+      "screens": [
+        {
+          "name": "Choose a weekly limit",
+          "platform": "mobile",
+          "root": {
+            "type": "stack",
+            "padding": 0,
+            "children": [
+              { "type": "navbar", "label": "Your first budget" },
+              { "type": "text", "text": "What feels comfortable this week?" },
+              { "type": "input", "label": "Weekly spending limit", "placeholder": "$150" },
+              { "type": "tabbar", "items": ["$100", "$150", "$200"] },
+              { "type": "button", "label": "Start with this" },
+              { "type": "note", "text": "You can change this any time." }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

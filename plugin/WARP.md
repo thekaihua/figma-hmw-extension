@@ -1,121 +1,25 @@
-# WARP.md
+# Plugin guidance
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+The plugin is a renderer for agent-produced HMW idea specs. It runs in Figma Design only.
 
-## Project Overview
-
-This is a Figma plugin built with TypeScript that demonstrates basic plugin functionality with UI interaction. The plugin creates rectangles in Figma based on user input.
-
-## Essential Commands
-
-### Building
 ```bash
-npm run build       # Compile TypeScript and bundle HTML
-npm run bundle      # Bundle HTML into code.js (run after tsc)
-npm run watch       # Watch mode - auto-recompile TypeScript on changes
+# Install once from the repository root, then in plugin/:
+npm test
+npm run typecheck
+npm run build
+npm run watch
 ```
 
-**Important**: `npm run build` runs both `tsc` and the custom bundling script. The bundling step is critical—it injects the HTML content into the compiled JavaScript by replacing the `__html__` placeholder.
+`src/code.ts` runs in the Figma sandbox. It validates messages through the injectable shared validator, serializes renders to prevent placement races, and sends a reply even after failure. `render_ideas` and local `paste_json` go through the same rendering path. `status` returns file and page names. Never access browser/network APIs here.
 
-### Testing in Figma
-1. Build the plugin first: `npm run build`
-2. Open Figma desktop app
-3. Navigate to `Plugins` → `Development` → `Import plugin from manifest...`
-4. Select `manifest.json` from this project root
-5. Run via `Plugins` → `Development` → `HMW Extension`
+`src/core/plan.ts` converts the spec into plain frame/text/rectangle primitives. Wireframe paints must be greyscale. `src/core/grid.ts` places at most four idea columns per row and places a batch to the right of existing page bounds. Keep these modules pure and Node-testable.
 
-After code changes:
-- Run `npm run build` again
-- In Figma, close and reopen the plugin to see changes
+`src/render/apply.ts` loads Inter Regular and Bold before setting characters, then applies width-constrained auto layout with automatic text height. `ideaCard.ts` preserves the original colored approach tags; that palette is separate from wireframes. `section.ts` creates one Section per HMW, measures actual rendered columns before placement, cleans up partial output on failure, and scrolls to the Section. Reparent newly created nodes immediately so cleanup removes the entire batch. Keep existing content intact.
 
-## Architecture
+`src/ui/connection.ts` owns the WebSocket factory port, reconnect backoff, pairing form, UI statuses, run log, and clipboard/Paste JSON controls. Require a user-entered token before opening a socket; send it only as the first `{type:'pair',token}` message and wait for `{type:'paired'}` before forwarding commands or showing connected. Keep the token only in the open connection's memory, clear the input after submission, and never persist it, put it in URLs, send it to the sandbox, or include it in run logs. Pairing rejection clears a stale token and pauses reconnects until the user enters a new one. Socket replies must retain the request ID and return only to the socket that originated the request. Local Paste JSON replies must never leak into the bridge. Listen only to `parent` window messages. User content must be inserted with `textContent`, never interpolated into HTML.
 
-### Two-Thread Model
+`src/ui/ui.html` is presentation only. Keep status, setup commands, the password-style pairing input, Paste JSON and recent runs accessible in Figma's light/dark themes. No remote assets, analytics, or AI-provider calls.
 
-Figma plugins run on a **dual-thread architecture**:
+`build.js` uses esbuild to bundle `connection.ts`, inline the script into `ui.html`, and inject that HTML into `code.ts`. Both `dist/code.js` and `dist/ui.html` are generated. All sandbox dependencies must be bundled. Zod uses interpreted validation; do not enable dynamic evaluation. The build smoke test runs the actual bundle with dynamic code generation disabled.
 
-1. **Main Thread** (`src/code.ts`): 
-   - Runs in Figma's sandbox
-   - Has full access to Figma Document API (`figma.*`)
-   - Cannot access browser APIs or external network
-   - Handles all document manipulation (creating/modifying nodes)
-
-2. **UI Thread** (`src/ui.html`):
-   - Runs in an isolated iframe
-   - Has access to standard web APIs (DOM, etc.)
-   - Cannot access Figma Document API
-   - Handles user interface and interactions
-
-**Communication**: The two threads communicate via the `postMessage` API:
-- UI → Main: `parent.postMessage({ pluginMessage: {...} }, '*')`
-- Main → UI: `figma.ui.postMessage({...})`
-- Main listens via: `figma.ui.onmessage = (msg) => {...}`
-
-### Build Process
-
-The build process has a critical custom step:
-
-1. TypeScript compiles `src/code.ts` → `dist/code.js`
-2. The custom `build.js` script:
-   - Reads `src/ui.html`
-   - Injects the HTML as a string into `dist/code.js` (replacing `__html__`)
-   - Copies `ui.html` to `dist/` for the manifest reference
-
-This is why `src/code.ts` can reference `__html__`—it's replaced during the build step.
-
-### File Structure
-
-```
-src/
-├── code.ts        # Main plugin logic (Figma API access)
-└── ui.html        # Plugin UI with embedded CSS and JS
-
-dist/              # Build output (generated, not in git)
-├── code.js        # Compiled and bundled code
-└── ui.html        # Copied UI file
-
-manifest.json      # Plugin metadata and configuration
-build.js          # Custom build script for HTML bundling
-```
-
-## Key Patterns
-
-### Adding New Figma Operations
-
-When adding functionality that manipulates the Figma document:
-
-1. Add UI controls in `src/ui.html`
-2. Send message from UI with `parent.postMessage()`
-3. Handle in `src/code.ts` in the `figma.ui.onmessage` handler
-4. Use Figma API calls (e.g., `figma.createRectangle()`, `figma.currentPage.appendChild()`)
-
-### Message Types
-
-Current message types in use:
-- `create-rectangles`: Creates N rectangles (includes `count` parameter)
-- `cancel`: Closes the plugin
-
-Add new message types following this pattern with a descriptive `type` field.
-
-## TypeScript Configuration
-
-- Target: ES2017
-- Strict mode enabled
-- Types include `@figma/plugin-typings` for Figma API access
-- Output directory: `dist/`
-
-## Plugin Manifest
-
-The `manifest.json` defines:
-- Plugin name and ID
-- Entry points (`main`: `dist/code.js`, `ui`: `dist/ui.html`)
-- API version: 1.0.0
-- Editor type: Figma only
-- Network access: Disabled (`allowedDomains: ["none"]`)
-
-## Development Constraints
-
-- **No external network access** by default (configured in manifest)
-- **No npm packages in runtime code** unless they're bundled
-- **UI thread has no Figma API access** - all document operations must go through main thread
-- **Main thread has no DOM access** - all UI operations must go through UI thread
+Import `manifest.json` through Figma Desktop's development-plugin menu after building. Network access is restricted to `ws://localhost:3055`; the bridge listens on IPv4 loopback. Actual Figma checks are listed in [../docs/manual-verification.md](../docs/manual-verification.md).

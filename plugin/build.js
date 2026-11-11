@@ -1,21 +1,24 @@
-const fs = require('fs');
-const path = require('path');
+const { build } = require('esbuild');
+const { readFileSync, mkdirSync, writeFileSync, watch } = require('node:fs');
 
-// Read the compiled code.js
-const codePath = path.join(__dirname, 'dist', 'code.js');
-let code = fs.readFileSync(codePath, 'utf8');
+async function bundle() {
+  const ui = await build({ entryPoints: ['src/ui/connection.ts'], bundle: true,
+    write: false, format: 'iife', platform: 'browser', target: 'es2017' });
+  const script = ui.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+  const html = readFileSync('src/ui/ui.html', 'utf8').replace('__UI_SCRIPT__', () => script);
+  mkdirSync('dist', { recursive: true });
+  writeFileSync('dist/ui.html', html);
+  await build({ entryPoints: ['src/code.ts'], outfile: 'dist/code.js', bundle: true,
+    format: 'iife', platform: 'neutral', target: 'es2017',
+    define: { __html__: JSON.stringify(html) } });
+}
 
-// Read the UI HTML
-const uiPath = path.join(__dirname, 'src', 'ui.html');
-const html = fs.readFileSync(uiPath, 'utf8');
-
-// Replace __html__ placeholder with the actual HTML
-code = code.replace('__html__', JSON.stringify(html));
-
-// Write the bundled code back
-fs.writeFileSync(codePath, code);
-
-// Copy the HTML to dist folder
-fs.copyFileSync(uiPath, path.join(__dirname, 'dist', 'ui.html'));
-
-console.log('Build complete!');
+bundle().catch(error => { console.error(error); process.exitCode = 1; });
+if (process.argv.includes('--watch')) {
+  let timer;
+  let pending = Promise.resolve();
+  for (const path of ['src', '../shared']) watch(path, { recursive: true }, () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { pending = pending.then(bundle).catch(console.error); }, 80);
+  });
+}

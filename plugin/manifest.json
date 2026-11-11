@@ -1,5 +1,5 @@
 {
-  "name": "HMW Extension",
+  "name": "HMW Diverger",
   "id": "figma-hmw-extension",
   "api": "1.0.0",
   "main": "dist/code.js",
@@ -7,8 +7,7 @@
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["none"],
-    "devAllowedDomains": ["http://localhost:3000"],
-    "reasoning": "Plugin connects to local backend API (localhost) for AI-powered idea generation during development"
+    "allowedDomains": ["ws://localhost:3055"],
+    "reasoning": "Connects to the user's local HMW Diverger MCP bridge on port 3055 to receive wireframe ideas from Claude Code or Codex and return rendering results. The bridge is required in production; no hosted AI service or API key is used by this plugin."
   }
 }
